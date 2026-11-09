@@ -8,6 +8,7 @@ const COMMANDS = [
   { name: "ask", description: "Ask the Federal Government AI assistant a question.", type: 1, options: [{ name: "question", description: "What would you like to know about the server?", type: 3, required: true }] },
   { name: "positions", description: "Show which government positions are open or filled.", type: 1 },
   { name: "embed", description: "Post the Federal Government recruitment and applications embed.", type: 1 },
+  { name: "applications", description: "Show direct application forms for government positions.", type: 1 },
   { name: "about", description: "Explain what this bot can and cannot do.", type: 1 }
 ];
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } }); }
@@ -143,10 +144,26 @@ async function getPositions(guildId, env) {
 async function handleCommand(interaction, env, ctx) {
   const name = interaction.data?.name;
   if (name === "ping") return message("Pong! The Cloudflare Discord bot is online.");
-  if (name === "about") return { type: 4, data: { flags: 64, embeds: [{ title: "Federal Government Bot", description: "I provide AI-powered answers and recruitment information for this roleplay server.\n\n**Commands:** /ask, /positions, /embed, /ping, /about.\n**Important:** I cannot approve applications, grant roles, or take moderation actions.", color: 0x12203a }] } };
+  if (name === "about") return { type: 4, data: { flags: 64, embeds: [{ title: "Federal Government Bot", description: "I provide AI-powered answers and recruitment information for this roleplay server.\n\n**Commands:** /ask, /positions, /embed, /applications, /ping, /about.\n**Important:** I cannot approve applications, grant roles, or take moderation actions.", color: 0x12203a }] } };
   if (name === "embed") {
     if (!hasAdminRole(interaction)) return message("You don't have permission to use this command.");
     return { type: 4, data: { embeds: [{ title: "🏛️ Federal Government Recruitment", description: "Interested in joining the Federal Government? Explore available government positions and submit an application using the links below.\n\n**Website:** " + WEBSITE_URL + "\n\nDirect application forms and current opportunities are available on the website.\n\n*More information, requirements, and updates are available on the website.*", url: WEBSITE_URL, color: 0x12203a, footer: { text: "TSRP Federal Government" } }], components: [{ type: 1, components: [{ type: 2, style: 5, label: "Visit Government Website", url: WEBSITE_URL }] }] } };
+  }
+  if (name === "applications") {
+    return { type: 4, data: { embeds: [{
+      title: "📋 Federal Government Applications",
+      description: "Choose the position you want to apply for. Select a form below to begin.",
+      color: 0x12203a,
+      fields: [
+        { name: "Cabinet", value: "[Submit Cabinet Application](https://melon.ly/form/7524967166202875904)", inline: true },
+        { name: "Presidential", value: "[Submit Presidential Application](https://melon.ly/form/7524967269512777728)", inline: true },
+        { name: "Representative", value: "[Submit Representative Application](https://melon.ly/form/7524967604100796416)", inline: true },
+        { name: "Senator", value: "[Submit Senator Application](https://melon.ly/form/7524967661751504896)", inline: true },
+        { name: "Judicial", value: "[Submit Judicial Application](https://melon.ly/form/7524967726125682688)", inline: true },
+        { name: "USSS", value: "[Submit USSS Application](https://melon.ly/form/7524971337077493760)", inline: true }
+      ],
+      footer: { text: "TSRP Federal Government" }
+    }] } };
   }
   if (name === "ask") {
     const option = (interaction.data?.options || []).find(x => x.name === "question"), question = option?.value;
