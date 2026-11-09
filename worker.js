@@ -9,8 +9,10 @@ const COMMANDS = [
   { name: "about", description: "Explain what this bot can and cannot do.", type: 1 }
 ];
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } }); }
-function hexToBytes(hex) {
-  if (!/^[0-9a-f]{128}$/i.test(hex || "")) throw new Error("Invalid Discord public key");
+function hexToBytes(hex, expectedLength) {
+  if (typeof hex !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(hex) || (expectedLength && hex.length !== expectedLength * 2)) {
+    throw new Error("Invalid hexadecimal value");
+  }
   const out = new Uint8Array(hex.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   return out;
@@ -19,8 +21,8 @@ async function verifyDiscord(request, body, publicKey) {
   const signature = request.headers.get("X-Signature-Ed25519"), timestamp = request.headers.get("X-Signature-Timestamp");
   if (!signature || !timestamp || !publicKey) return false;
   try {
-    const key = await crypto.subtle.importKey("raw", hexToBytes(publicKey), { name: "Ed25519" }, false, ["verify"]);
-    return await crypto.subtle.verify({ name: "Ed25519" }, key, hexToBytes(signature), new TextEncoder().encode(timestamp + body));
+    const key = await crypto.subtle.importKey("raw", hexToBytes(publicKey, 32), { name: "Ed25519" }, false, ["verify"]);
+    return await crypto.subtle.verify({ name: "Ed25519" }, key, hexToBytes(signature, 64), new TextEncoder().encode(timestamp + body));
   } catch { return false; }
 }
 function message(content, ephemeral = true) { return { type: 4, data: { content, ...(ephemeral ? { flags: 64 } : {}) } }; }
