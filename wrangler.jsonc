@@ -5,5 +5,11 @@
   "compatibility_date": "2026-11-09",
   "vars": {
     "DISCORD_PUBLIC_KEY": "89bdc58144d734399e1286d500cd17ccc73ba730101daab2cbabcfa2f92432d0"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
   }
 }
