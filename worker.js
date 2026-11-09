@@ -29,7 +29,7 @@ async function verifyDiscord(request, body, publicKey) {
 function message(content, ephemeral = true) { return { type: 4, data: { content, ...(ephemeral ? { flags: 64 } : {}) } }; }
 function getBotToken(env) {
   const candidate = env["TSRP-Discord-Bot"] || env.DISCORD_BOT_TOKEN || "";
-  return String(candidate).trim().replace(/^Bot\\s+/i, "");
+  return String(candidate).trim().replace(/^Bot\s+/i, "");
 }
 function hasAdminRole(interaction) { return (interaction.member?.roles || []).map(String).includes(ADMIN_ROLE_ID); }
 async function discordApi(path, token, init = {}) {
@@ -171,7 +171,7 @@ export default {
     let interaction;
     try { interaction = JSON.parse(body); } catch { return new Response("Invalid JSON.", { status: 400 }); }
     if (interaction.type === 1) {
-      ctx.waitUntil(registerCommands(interaction.application_id, env).catch(error => console.error("Discord command sync failed:", error)));
+      ctx.waitUntil(registerCommands(interaction.application_id, env).catch(error => console.error("Discord command sync failed:", error && error.message ? error.message : String(error))));
       return json({ type: 1 });
     }
     if (interaction.type === 2) return json(await handleCommand(interaction, env, ctx));
