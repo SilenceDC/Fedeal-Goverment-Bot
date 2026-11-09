@@ -29,17 +29,60 @@ async function verifyDiscord(request, body, publicKey) {
 function message(content, ephemeral = true) { return { type: 4, data: { content, ...(ephemeral ? { flags: 64 } : {}) } }; }
 function getBotToken(env) {
   const candidate = env["TSRP-Discord-Bot"] || env.DISCORD_BOT_TOKEN || "";
-  return candidate.split(".").length === 3 && !candidate.startsWith("gsk_") ? candidate : "";
+  return String(candidate).trim().replace(/^Bot\\s+/i, "");
 }
 function hasAdminRole(interaction) { return (interaction.member?.roles || []).map(String).includes(ADMIN_ROLE_ID); }
+async function discordApi(path, token, init = {}) {
+  return fetch("https://discord.com/api/v10" + path, {
+    ...init,
+    headers: { Authorization: "Bot " + token, ...(init.headers || {}) }
+  });
+}
+async function getCommandStatus(env) {
+  const token = getBotToken(env);
+  if (!token) throw new Error("The TSRP-Discord-Bot secret is empty.");
+  const appResponse = await discordApi("/applications/@me", token);
+  const appText = await appResponse.text();
+  if (!appResponse.ok) throw new Error("Discord token check failed (" + appResponse.status + "): " + appText.slice(0, 400));
+  const application = JSON.parse(appText);
+  const commandsResponse = await discordApi("/applications/" + application.id + "/guilds/" + GUILD_ID + "/commands", token);
+  const commandsText = await commandsResponse.text();
+  if (!commandsResponse.ok) throw new Error("Could not read guild commands (" + commandsResponse.status + "): " + commandsText.slice(0, 400));
+  const commands = JSON.parse(commandsText);
+  const registered = Array.isArray(commands) ? commands.map(command => command.name) : [];
+  const expected = COMMANDS.map(command => command.name);
+  return {
+    ok: true,
+    application_id: application.id,
+    application_name: application.name || null,
+    guild_id: GUILD_ID,
+    registered_commands: registered,
+    expected_commands: expected,
+    missing_commands: expected.filter(name => !registered.includes(name))
+  };
+}
 async function registerCommands(applicationId, env) {
   const token = getBotToken(env);
-  if (!token || !applicationId) { console.log("Slash-command auto-registration skipped: Discord bot token secret is not configured."); return; }
-  const response = await fetch("https://discord.com/api/v10/applications/" + applicationId + "/guilds/" + GUILD_ID + "/commands", {
-    method: "PUT", headers: { "Authorization": "Bot " + token, "Content-Type": "application/json" }, body: JSON.stringify(COMMANDS)
+  if (!token) throw new Error("The TSRP-Discord-Bot secret is empty.");
+  const appResponse = await discordApi("/applications/@me", token);
+  const appText = await appResponse.text();
+  if (!appResponse.ok) throw new Error("Discord token check failed (" + appResponse.status + "): " + appText.slice(0, 400));
+  const application = JSON.parse(appText);
+  if (!application.id) throw new Error("Discord did not return an application ID for the saved bot token.");
+  if (applicationId && String(applicationId) !== String(application.id)) {
+    throw new Error("The saved bot token belongs to a different Discord application than the configured Interactions Endpoint.");
+  }
+  const response = await discordApi("/applications/" + application.id + "/guilds/" + GUILD_ID + "/commands", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(COMMANDS)
   });
-  if (!response.ok) console.error("Discord command registration failed", response.status, (await response.text()).slice(0, 500));
-  else console.log("Registered five guild-specific Discord slash commands for guild " + GUILD_ID + ".");
+  const responseText = await response.text();
+  if (!response.ok) throw new Error("Discord command registration failed (" + response.status + "): " + responseText.slice(0, 500));
+  const status = await getCommandStatus(env);
+  if (status.missing_commands.length) throw new Error("Discord accepted the registration request, but verification is missing: " + status.missing_commands.join(", "));
+  console.log("Registered and verified guild slash commands:", status.registered_commands.join(", "), "for guild", GUILD_ID);
+  return status;
 }
 async function askGroq(question, env) {
   if (!env.GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
@@ -126,16 +169,24 @@ async function handleCommand(interaction, env, ctx) {
 }
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/__status") {
+      try { return json(await getCommandStatus(env)); }
+      catch (error) { console.error("Discord status check failed:", error); return json({ ok: false, error: String(error.message || error) }, 502); }
+    }
     if (request.method !== "POST") return new Response("TSRP Discord interactions endpoint is running.", { status: 200 });
     const body = await request.text();
     if (!(await verifyDiscord(request, body, env.DISCORD_PUBLIC_KEY))) return new Response("Invalid request signature.", { status: 401 });
     let interaction;
     try { interaction = JSON.parse(body); } catch { return new Response("Invalid JSON.", { status: 400 }); }
     if (interaction.type === 1) {
-      if (interaction.application_id) ctx.waitUntil(registerCommands(interaction.application_id, env));
+      ctx.waitUntil(registerCommands(interaction.application_id, env).catch(error => console.error("Discord command sync failed:", error)));
       return json({ type: 1 });
     }
     if (interaction.type === 2) return json(await handleCommand(interaction, env, ctx));
     return new Response("Unsupported interaction type.", { status: 400 });
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(registerCommands(null, env).catch(error => console.error("Scheduled Discord command sync failed:", error)));
   }
 };
