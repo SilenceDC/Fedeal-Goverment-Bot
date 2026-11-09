@@ -72,7 +72,7 @@ async function registerCommands(applicationId, env) {
   if (applicationId && String(applicationId) !== String(application.id)) {
     throw new Error("The saved bot token belongs to a different Discord application than the configured Interactions Endpoint.");
   }
-  const response = await discordApi("/applications/" + application.id + "/guilds/" + GUILD_ID + "/commands", {
+  const response = await discordApi("/applications/" + application.id + "/guilds/" + GUILD_ID + "/commands", token, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(COMMANDS)
