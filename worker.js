@@ -150,10 +150,10 @@ async function handleCommand(interaction, env, ctx) {
     return { type: 4, data: { embeds: [{
       title: "🏛️ Federal Government Recruitment",
       url: WEBSITE_URL,
-      description: "Interested in joining the Federal Government? Explore available government positions and submit an application using the links below.\n" +
-        "**Website:** [https://tsrp-federal-government--v2.tsrp-community.workers.dev/](https://tsrp-federal-government--v2.tsrp-community.workers.dev/)\n" +
-        "Direct application forms and current opportunities are available on the website. *More information, requirements, and updates are available on the website.*\n\n" +
-        "**Prefer to apply directly through Discord?** Head to **Text⁠『📝』applications** to apply without using the website.",
+      description: "Interested in joining the Federal Government? Explore available government positions and submit an application using the links below.\\n" +
+        "**Website:** " + WEBSITE_URL + "\\n" +
+        "Direct application forms and current opportunities are available on the website. *More information, requirements, and updates are available on the website.*\\n\\n" +
+        "**Prefer to apply directly through Discord?** Head to <#1561390540208087133> to apply without using the website.",
       color: 0x12203a,
       thumbnail: { url: "https://discord.com/assets/9c776070bdce9faf.svg" },
       footer: { text: "TSRP Federal Government" }
