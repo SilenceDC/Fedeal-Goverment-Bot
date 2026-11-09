@@ -147,7 +147,17 @@ async function handleCommand(interaction, env, ctx) {
   if (name === "about") return { type: 4, data: { flags: 64, embeds: [{ title: "Federal Government Bot", description: "I provide AI-powered answers and recruitment information for this roleplay server.\n\n**Commands:** /ask, /positions, /embed, /applications, /ping, /about.\n**Important:** I cannot approve applications, grant roles, or take moderation actions.", color: 0x12203a }] } };
   if (name === "embed") {
     if (!hasAdminRole(interaction)) return message("You don't have permission to use this command.");
-    return { type: 4, data: { embeds: [{ title: "🏛️ Federal Government Recruitment", description: "Interested in joining the Federal Government? Explore available positions, requirements, and current opportunities on the Government Website.\n\nPrefer to apply directly through Discord? Visit <#1561390540208087133> and choose an application form.", url: WEBSITE_URL, color: 0x12203a, footer: { text: "TSRP Federal Government" } }], components: [{ type: 1, components: [{ type: 2, style: 5, label: "Visit Government Website", url: WEBSITE_URL }] }] } };
+    return { type: 4, data: { embeds: [{
+      title: "🏛️ Federal Government Recruitment",
+      url: WEBSITE_URL,
+      description: "Interested in joining the Federal Government? Explore available government positions and submit an application using the links below.\\n" +
+        "**Website:** [https://tsrp-federal-government--v2.tsrp-community.workers.dev/](https://tsrp-federal-government--v2.tsrp-community.workers.dev/)\\n" +
+        "Direct application forms and current opportunities are available on the website. *More information, requirements, and updates are available on the website.*\\n\\n" +
+        "**Prefer to apply directly through Discord?** Head to **Text⁠『📝』applications** to apply without using the website.",
+      color: 0x12203a,
+      thumbnail: { url: "https://discord.com/assets/9c776070bdce9faf.svg" },
+      footer: { text: "TSRP Federal Government" }
+    }] } };
   }
   if (name === "applications") {
     return { type: 4, data: { embeds: [{
