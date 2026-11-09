@@ -1,5 +1,6 @@
 const ADMIN_ROLE_ID = "1569086048850411550";
 const GUILD_ID = "1560343065586172158";
+const APPLICATION_ID = "1568333697021776055";
 const WEBSITE_URL = "https://tsrp-federal-government--v2.tsrp-community.workers.dev/";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const COMMANDS = [
@@ -163,7 +164,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/__status") {
-      return json({ ok: false, error: "A Discord interaction is needed to provide the application ID. Save the Interactions Endpoint URL again to trigger registration." }, 409);
+      try { return json(await getCommandStatus(env, APPLICATION_ID)); } catch (error) { return json({ ok: false, error: error.message }, 502); }
     }
     if (request.method !== "POST") return new Response("TSRP Discord interactions endpoint is running.", { status: 200 });
     const body = await request.text();
@@ -171,13 +172,13 @@ export default {
     let interaction;
     try { interaction = JSON.parse(body); } catch { return new Response("Invalid JSON.", { status: 400 }); }
     if (interaction.type === 1) {
-      ctx.waitUntil(registerCommands(interaction.application_id, env).catch(error => console.error("Discord command sync failed:", error && error.message ? error.message : String(error))));
+      ctx.waitUntil(registerCommands(APPLICATION_ID, env).catch(error => console.error("Discord command sync failed:", error && error.message ? error.message : String(error))));
       return json({ type: 1 });
     }
     if (interaction.type === 2) return json(await handleCommand(interaction, env, ctx));
     return new Response("Unsupported interaction type.", { status: 400 });
   },
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(registerCommands(null, env).catch(error => console.error("Scheduled Discord command sync failed:", error)));
+    ctx.waitUntil(registerCommands(APPLICATION_ID, env).catch(error => console.error("Scheduled Discord command sync failed:", error && error.message ? error.message : String(error))));
   }
 };
