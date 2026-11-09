@@ -1,4 +1,5 @@
 const ADMIN_ROLE_ID = "1569086048850411550";
+const GUILD_ID = "1560343065586172158";
 const WEBSITE_URL = "https://tsrp-federal-government--v2.tsrp-community.workers.dev/";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const COMMANDS = [
@@ -34,11 +35,11 @@ function hasAdminRole(interaction) { return (interaction.member?.roles || []).ma
 async function registerCommands(applicationId, env) {
   const token = getBotToken(env);
   if (!token || !applicationId) { console.log("Slash-command auto-registration skipped: Discord bot token secret is not configured."); return; }
-  const response = await fetch("https://discord.com/api/v10/applications/" + applicationId + "/commands", {
+  const response = await fetch("https://discord.com/api/v10/applications/" + applicationId + "/guilds/" + GUILD_ID + "/commands", {
     method: "PUT", headers: { "Authorization": "Bot " + token, "Content-Type": "application/json" }, body: JSON.stringify(COMMANDS)
   });
   if (!response.ok) console.error("Discord command registration failed", response.status, (await response.text()).slice(0, 500));
-  else console.log("Registered five global Discord slash commands.");
+  else console.log("Registered five guild-specific Discord slash commands for guild " + GUILD_ID + ".");
 }
 async function askGroq(question, env) {
   if (!env.GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
